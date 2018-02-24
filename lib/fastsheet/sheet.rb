@@ -4,9 +4,9 @@ module Fastsheet
                 :rows, :header,
                 :width, :height
 
-    def initialize(file_name, options = {})
+    def initialize(file_name, sheet_name, options = {})
       # this method sets @rows, @height and @width
-      read!(file_name)
+      read!(file_name, sheet_name)
 
       @header = @rows.shift if options[:header]
     end
