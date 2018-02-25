@@ -4,7 +4,7 @@ extern crate calamine;
 use std::ffi::{CString, CStr};
 use libc::{c_int, c_void, c_char, c_double, uintptr_t};
 
-use calamine::{open_workbook, Xlsx, Reader, DataType};
+use calamine::{open_workbook_auto, Reader, DataType};
 
 //
 // Prepare Ruby bindings
@@ -67,7 +67,7 @@ pub fn rstr(string: Value) -> String {
 
 // Read the sheet
 unsafe fn read(this: Value, rb_file_name: Value, rb_sheet_name: Value) -> Value {
-    let mut workbook: Xlsx<_> = open_workbook(rstr(rb_file_name)).expect("Cannot open file");
+    let mut workbook = open_workbook_auto(rstr(rb_file_name)).expect("Cannot open file");
 
     // TODO: allow use different worksheets
     let sheet = workbook.worksheet_range(&rstr(rb_sheet_name)).unwrap().unwrap();
