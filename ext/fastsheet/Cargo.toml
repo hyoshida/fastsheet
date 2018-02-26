@@ -2,11 +2,10 @@
 name = "fastsheet"
 version = "0.1.0"
 publish = false
-build = "build.rs"
 
 [lib]
 name = "fastsheet"
-crate-type = ["cdylib"]
+crate-type = ["dylib"]
 
 [dependencies]
 calamine = "0.13.0"

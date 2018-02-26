@@ -2,7 +2,7 @@ extern crate libc;
 extern crate calamine;
 
 use std::ffi::{CString, CStr};
-use libc::{c_int, c_void, c_char, c_double, uintptr_t};
+use libc::{c_int, c_char, c_double, uintptr_t};
 
 use calamine::{open_workbook_auto, Reader, DataType};
 
@@ -20,14 +20,6 @@ const FALSE: usize = 0x00;
 
 // Load some Ruby API functions
 extern "C" {
-    // Object class
-    static rb_cObject: Value;
-
-    // Modules and classes
-    fn rb_define_module(name: *const c_char) -> Value;
-    fn rb_define_class_under(outer: Value, name: *const c_char, superclass: Value) -> Value;
-    fn rb_define_method(class: Value, name: *const c_char, method: *const c_void, argc: c_int) -> Value;
-
     // Set instance variables
     fn rb_iv_set(object: Value, name: *const c_char, value: Value) -> Value;
 
@@ -39,9 +31,6 @@ extern "C" {
     fn rb_int2big(num: c_int) -> Value;
     fn rb_float_new(num: c_double) -> Value;
     fn rb_utf8_str_new_cstr(str: *const c_char) -> Value;
-
-    // Ruby string to C string
-    fn rb_string_value_cstr(str: *const Value) -> *const c_char;
 }
 
 //
@@ -54,10 +43,9 @@ pub fn cstr(string: &str) -> CString {
 }
 
 // Rust string from Ruby string
-pub fn rstr(string: Value) -> String {
+pub fn rstr(string: *const c_char) -> String {
     unsafe {
-        let s = rb_string_value_cstr(&string);
-        CStr::from_ptr(s).to_string_lossy().into_owned()
+        CStr::from_ptr(string).to_string_lossy().into_owned()
     }
 }
 
@@ -66,7 +54,8 @@ pub fn rstr(string: Value) -> String {
 //
 
 // Read the sheet
-unsafe fn read(this: Value, rb_file_name: Value, rb_sheet_name: Value) -> Value {
+#[no_mangle]
+pub unsafe extern fn read(this: Value, rb_file_name: *const c_char, rb_sheet_name: *const c_char) -> Value {
     let mut workbook = open_workbook_auto(rstr(rb_file_name)).expect("Cannot open file");
 
     // TODO: allow use different worksheets
@@ -123,26 +112,4 @@ unsafe fn read(this: Value, rb_file_name: Value, rb_sheet_name: Value) -> Value 
     );
 
     this
-}
-
-// Init_libfastsheet symbol is an entrypoint for the lib
-//
-// This function will be executed when we require the lib.
-//
-#[no_mangle]
-#[allow(non_snake_case)]
-pub unsafe extern fn Init_libfastsheet() {
-    let Fastsheet =
-        rb_define_module(cstr("Fastsheet").as_ptr());
-
-    let Sheet =
-        rb_define_class_under(Fastsheet, cstr("Sheet").as_ptr(), rb_cObject);
-
-    rb_define_method(
-        Sheet,
-        cstr("read!").as_ptr(),
-        // Rust function as pointer to C function
-        read as *const c_void,
-        2 as c_int
-    );
 }
